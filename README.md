@@ -86,6 +86,12 @@ npm run build
 ```
 Point your static hosting to the Vite build output. If you protect the app with Cloudflare Access, serve the SPA and `/api` Worker on the same eTLD+1 (e.g. `https://strategicfork.xyz` and `https://strategicfork.xyz/api/*`) so the Access cookie remains first-party; otherwise browsers will drop it on fetch/XHR requests.
 
+### Cloudflare Access branding
+Keep the Access login page consistent with the in-app Marble styling:
+- Logo assets live in `assets/marble-access-logo.{svg,png}`.
+- Recommended colors, copy, and rollback notes are in `docs/access-branding.md`.
+- Update the team appearance and the specific `strategicfork.xyz` application in the Cloudflare dashboard together so users see the same look before and after signing in.
+
 ## API overview
 - `POST /api/upload-url` – generate presigned upload URL to R2.
 - `POST /api/upload-direct` – store raw text body straight into R2 (helpful for CLI tooling).

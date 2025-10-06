@@ -3,10 +3,11 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import { fetchSession, getAccessLoginUrl, getAccessLogoutUrl, HttpError } from './lib/api';
 import { FileManager } from './components/FileManager';
 import { ChatPanel } from './components/ChatPanel';
+import { AudioModalityPanel } from './components/AudioModalityPanel';
 
 const queryClient = new QueryClient();
 
-type ActiveView = 'chat' | 'vault' | 'about';
+type ActiveView = 'chat' | 'vault' | 'audio' | 'about';
 
 function Dashboard() {
   const { data, isLoading, isError, error } = useQuery({ queryKey: ['session'], queryFn: fetchSession });
@@ -119,6 +120,13 @@ function Dashboard() {
             >
               <span>Files &amp; Folders</span>
             </button>
+            <button
+              type="button"
+              className={activeView === 'audio' ? 'active' : ''}
+              onClick={() => setActiveView('audio')}
+            >
+              <span>Audio Modality</span>
+            </button>
           </div>
           <div className="primary-nav__about-card">
             <h3>About Marble</h3>
@@ -145,6 +153,13 @@ function Dashboard() {
             aria-hidden={activeView !== 'vault'}
           >
             {user ? <FileManager currentUserId={user.id} /> : null}
+          </div>
+          <div
+            className={`app-pane${activeView === 'audio' ? ' is-active' : ''}`}
+            hidden={activeView !== 'audio'}
+            aria-hidden={activeView !== 'audio'}
+          >
+            <AudioModalityPanel />
           </div>
           <div
             className={`app-pane${activeView === 'about' ? ' is-active' : ''}`}
