@@ -1,12 +1,32 @@
 import JSZip from 'jszip';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
-import * as pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.mjs';
 
-// Force pdfjs to execute in-process inside the Worker runtime.
-(GlobalWorkerOptions as any).disableWorker = true;
-(GlobalWorkerOptions as any).workerPort = null;
-// pdfjs checks for an embedded worker before falling back to dynamic imports.
-(globalThis as any).pdfjsWorker = pdfjsWorker;
+type PdfJsModule = typeof import('pdfjs-dist/legacy/build/pdf.mjs');
+type PdfJsWorkerModule = typeof import('pdfjs-dist/legacy/build/pdf.worker.mjs');
+
+let pdfModulePromise: Promise<{ getDocument: PdfJsModule['getDocument']; GlobalWorkerOptions: PdfJsModule['GlobalWorkerOptions'] }> | null = null;
+
+async function ensurePdfModule() {
+  if (!pdfModulePromise) {
+    pdfModulePromise = (async () => {
+      // pdf.js expects a window global when configuring environment helpers.
+      if (typeof (globalThis as any).window === 'undefined') {
+        (globalThis as any).window = globalThis;
+      }
+
+      const [pdfModule, pdfWorker]: [PdfJsModule, PdfJsWorkerModule] = await Promise.all([
+        import('pdfjs-dist/legacy/build/pdf.mjs'),
+        import('pdfjs-dist/legacy/build/pdf.worker.mjs'),
+      ]);
+
+      (pdfModule.GlobalWorkerOptions as any).disableWorker = true;
+      (pdfModule.GlobalWorkerOptions as any).workerPort = null;
+      (globalThis as any).pdfjsWorker = pdfWorker;
+
+      return { getDocument: pdfModule.getDocument, GlobalWorkerOptions: pdfModule.GlobalWorkerOptions };
+    })();
+  }
+  return pdfModulePromise;
+}
 
 export type SupportedFileKind = 'txt' | 'pdf' | 'docx';
 
@@ -95,6 +115,7 @@ function decodeText(buffer: ArrayBuffer): string {
 
 async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
   try {
+    const { getDocument } = await ensurePdfModule();
     const pdfTask = getDocument({
       data: new Uint8Array(buffer),
       useSystemFonts: true,

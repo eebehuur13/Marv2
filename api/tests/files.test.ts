@@ -107,3 +107,129 @@ describe('files route permissions', () => {
     expect(db.files.size).toBe(1);
   });
 });
+
+describe('file download route', () => {
+  it('returns text content when the requester owns the private file', async () => {
+    const { env, db, r2, ctx } = createTestEnv();
+
+    const folderId = 'private-root';
+    const fileId = 'file-123';
+    const timestamp = new Date().toISOString();
+
+    db.folders.set(folderId, {
+      id: folderId,
+      tenant: 'default',
+      name: 'My Space',
+      visibility: 'private',
+      owner_id: 'user@example.com',
+      created_at: timestamp,
+      updated_at: timestamp,
+      deleted_at: null,
+    });
+
+    const objectKey = `users/user@example.com/${folderId}/${fileId}.txt`;
+    db.files.set(fileId, {
+      id: fileId,
+      tenant: 'default',
+      folder_id: folderId,
+      owner_id: 'user@example.com',
+      visibility: 'private',
+      file_name: 'notes.txt',
+      r2_key: objectKey,
+      size: 12,
+      mime_type: 'text/plain',
+      status: 'ready',
+      created_at: timestamp,
+      updated_at: timestamp,
+      deleted_at: null,
+    });
+
+    db.users.set('user@example.com', {
+      id: 'user@example.com',
+      email: 'user@example.com',
+      display_name: 'Test User',
+      avatar_url: null,
+      tenant: 'default',
+      last_seen: timestamp,
+      created_at: timestamp,
+    });
+
+    await r2.put(objectKey, 'Hello Marble!', {
+      httpMetadata: { contentType: 'text/plain' },
+    });
+
+    const request = new Request(`https://example.com/api/files/${fileId}/download`, {
+      headers: {
+        'cf-access-jwt-assertion': 'test-token',
+      },
+    });
+
+    const response = await app.fetch(request, env, ctx);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/plain');
+    expect(response.headers.get('content-disposition')).toContain('notes.txt');
+    const text = await response.text();
+    expect(text).toBe('Hello Marble!');
+  });
+
+  it('rejects access to private files owned by another user', async () => {
+    const { env, db, r2, ctx } = createTestEnv();
+
+    const folderId = 'private-root';
+    const fileId = 'file-secret';
+    const timestamp = new Date().toISOString();
+
+    db.folders.set(folderId, {
+      id: folderId,
+      tenant: 'default',
+      name: 'My Space',
+      visibility: 'private',
+      owner_id: 'other@example.com',
+      created_at: timestamp,
+      updated_at: timestamp,
+      deleted_at: null,
+    });
+
+    const objectKey = `users/other@example.com/${folderId}/${fileId}.txt`;
+    db.files.set(fileId, {
+      id: fileId,
+      tenant: 'default',
+      folder_id: folderId,
+      owner_id: 'other@example.com',
+      visibility: 'private',
+      file_name: 'secrets.txt',
+      r2_key: objectKey,
+      size: 20,
+      mime_type: 'text/plain',
+      status: 'ready',
+      created_at: timestamp,
+      updated_at: timestamp,
+      deleted_at: null,
+    });
+
+    db.users.set('other@example.com', {
+      id: 'other@example.com',
+      email: 'other@example.com',
+      display_name: 'Other User',
+      avatar_url: null,
+      tenant: 'default',
+      last_seen: timestamp,
+      created_at: timestamp,
+    });
+
+    await r2.put(objectKey, 'Top secret', {
+      httpMetadata: { contentType: 'text/plain' },
+    });
+
+    const request = new Request(`https://example.com/api/files/${fileId}/download`, {
+      headers: {
+        'cf-access-jwt-assertion': 'test-token',
+      },
+    });
+
+    const response = await app.fetch(request, env, ctx);
+    expect(response.status).toBe(403);
+    const payload = await response.json();
+    expect(payload).toMatchObject({ error: expect.stringContaining('access') });
+  });
+});
