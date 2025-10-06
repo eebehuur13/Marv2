@@ -9,14 +9,7 @@ export function AudioModalityPanel() {
   }, []);
 
   return (
-    <section className="audio-modality" aria-labelledby="audio-modality-heading">
-      <header className="audio-modality__header">
-        <h2 id="audio-modality-heading">Audio Modality</h2>
-        <p>
-          Access Voxa’s speech, transcription, and translation tools without leaving Marble. The experience below is the
-          live deployment embedded directly into your workspace.
-        </p>
-      </header>
+    <section className="audio-modality" aria-label="Audio Modality">
       <div className="audio-modality__frame" role="presentation">
         <iframe
           src={targetUrl}

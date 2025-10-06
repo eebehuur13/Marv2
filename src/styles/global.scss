@@ -548,28 +548,14 @@ textarea {
 .audio-modality {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   height: 100%;
-}
-
-.audio-modality__header {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--color-border-glass);
-  border-radius: var(--radius-panel);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-ambient);
-}
-
-.audio-modality__header p {
-  margin-top: 0.6rem;
-  color: var(--color-text-muted);
 }
 
 .audio-modality__frame {
   flex: 1;
-  min-height: 420px;
-  background: radial-gradient(circle at top right, rgba(96, 86, 248, 0.08), transparent 70%),
-    rgba(255, 255, 255, 0.92);
+  min-height: 540px;
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--color-border-glass);
   border-radius: var(--radius-panel);
   overflow: hidden;
